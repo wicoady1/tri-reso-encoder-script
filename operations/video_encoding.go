@@ -10,9 +10,17 @@ import (
 	"github.com/wicoady1/tri-reso-encoder-script/config"
 )
 
-func EncodeVideoInBackground(conf *config.Config) {
-	log.Println("masih jalan...")
+type Operations struct {
+	conf *config.Config
+}
 
+func NewOperations(conf *config.Config) Operations {
+	return Operations{
+		conf: conf,
+	}
+}
+
+func (op *Operations) EncodeVideoInBackground() {
 	//check if input and output folder are exists
 	//if none generate them
 	if _, err := os.Stat("input"); os.IsNotExist(err) {
@@ -32,7 +40,7 @@ func EncodeVideoInBackground(conf *config.Config) {
 	//check if file exists in input folder
 	var files []string
 	root := "input"
-	err := filepath.Walk(root, visit(&files))
+	err := filepath.Walk(root, op.visit(&files))
 	if err != nil {
 		panic(err)
 	}
@@ -40,18 +48,17 @@ func EncodeVideoInBackground(conf *config.Config) {
 	//encode the file, save the filename first
 	for _, file := range files {
 		log.Println(file)
-		encodeFile(file, file)
+		op.encodeFile(file, file)
 
 		//each successful video, delete them
 		os.Remove("input/" + file)
 	}
 
 	//end
-
 	time.Sleep(1 * time.Second)
 }
 
-func visit(files *[]string) filepath.WalkFunc {
+func (op *Operations) visit(files *[]string) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Fatal(err)
@@ -69,7 +76,7 @@ func visit(files *[]string) filepath.WalkFunc {
 	}
 }
 
-func encodeFile(input string, output string) {
+func (op *Operations) encodeFile(input string, output string) {
 	format := "mp4"
 	overwrite := true
 	videoFilter := "scale=-1:720"
@@ -89,8 +96,8 @@ func encodeFile(input string, output string) {
 	}
 
 	ffmpegConf := &ffmpeg.Config{
-		FfmpegBinPath:   "/usr/local/bin/ffmpeg",
-		FfprobeBinPath:  "/usr/local/bin/ffprobe",
+		FfmpegBinPath:   op.conf.FfmpegBinPath,
+		FfprobeBinPath:  op.conf.FfprobeBinPath,
 		ProgressEnabled: true,
 	}
 
